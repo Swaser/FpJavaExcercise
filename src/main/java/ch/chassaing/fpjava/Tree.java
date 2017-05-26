@@ -175,14 +175,18 @@ public abstract class Tree<A> {
     public Tree<A> remove(A a) {
       int compare = comparator.compare(a, value);
       return compare < 0
-             ? left.remove(a)
+             ? new Node<>(comparator, left.remove(a), value, right)
              : compare > 0
-               ? right.remove(a)
-               : removeMerge();
+               ? new Node<>(comparator, left, value, right.remove(a))
+               : merge(left, right);
     }
 
-    private Tree<A> removeMerge() {
-
+    private Tree<A> merge(Tree<A> left, Tree<A> right) {
+      return left.isEmpty()
+             ? right
+             : right.isEmpty()
+               ? left
+               : new Node<>(comparator, left, right.value(), merge(right.left(), right.right()));
     }
   }
 
@@ -191,6 +195,7 @@ public abstract class Tree<A> {
     return new Empty<>(comparator);
   }
 
+  @SafeVarargs
   public static <A> Tree<A> of(Comparator<A> comparator, A... as) {
     return List.of(as)
                .foldLeft(empty(comparator), Tree::insert);
