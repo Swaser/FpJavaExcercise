@@ -4,6 +4,7 @@ import javaslang.Tuple;
 import javaslang.Tuple2;
 
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static ch.chassaing.fpjava.TailCall.ret;
@@ -155,6 +156,14 @@ public abstract class List<T> {
    */
   public List<T> reverse() {
     return foldLeft(List.empty(), (list, elem) -> new Cons<>(elem, list));
+  }
+
+  public void forEach(Consumer<T> effect) {
+    List<T> it = this;
+    while (!this.isEmpty()) {
+      effect.accept(it.head());
+      it = it.tail();
+    }
   }
 
   public abstract List<T> setHead(T t);

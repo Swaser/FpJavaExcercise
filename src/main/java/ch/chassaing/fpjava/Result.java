@@ -23,6 +23,15 @@ public abstract class Result<V> implements Value<V> {
     // do not instantiate
   }
 
+  public static <V> Result<V> of(Try.CheckedSupplier<V> supplier) {
+    try {
+      V v = supplier.get();
+      return v == null ? empty() : success(v);
+    } catch (Throwable throwable) {
+      return failure(throwable);
+    }
+  }
+
   @SuppressWarnings("unchecked")
   public static <V> Result<V> empty() { return EMPTY; }
 
@@ -34,16 +43,16 @@ public abstract class Result<V> implements Value<V> {
     return new Success<>(requireNonNull(value));
   }
 
-  public static <V> Result<V> ofOption(Option<V> anOption) {
+  public static <V> Result<V> of(Option<V> anOption) {
     return requireNonNull(anOption)
             .map(Result::success)
             .getOrElse(empty());
   }
 
-  public static <V> Result<V> ofTry(Try<V> aTry) {
+  public static <V> Result<V> of(Try<V> aTry) {
     return requireNonNull(aTry)
             .map(Option::of)
-            .map(Result::ofOption)
+            .map(Result::of)
             .getOrElseGet(Result::failure);
   }
 
@@ -73,6 +82,8 @@ public abstract class Result<V> implements Value<V> {
   public Result<V> orElse(Supplier<Result<V>> alternative) {
     return map(v -> this).getOrElse(alternative);
   }
+
+  public abstract Option<String> process(Consumer<? super V> effect);
 
   @Override
   public abstract Result<V> peek(Consumer<? super V> consumer);
@@ -138,6 +149,11 @@ public abstract class Result<V> implements Value<V> {
     public Vector<V> toVector() {
       return Vector.empty();
     }
+
+    @Override
+    public Option<String> process(Consumer<? super V> effect) {
+      return Option.none();
+    }
   }
 
   private final static class Failure<V> extends Empty<V> {
@@ -167,6 +183,11 @@ public abstract class Result<V> implements Value<V> {
     @Override
     public Try<V> toTry() {
       return Try.failure(throwable);
+    }
+
+    @Override
+    public Option<String> process(Consumer<? super V> effect) {
+      return Option.of(throwable.getMessage());
     }
   }
 
@@ -227,6 +248,12 @@ public abstract class Result<V> implements Value<V> {
     @Override
     public Vector<V> toVector() {
       return Vector.of(value);
+    }
+
+    @Override
+    public Option<String> process(Consumer<? super V> effect) {
+      effect.accept(value);
+      return Option.none();
     }
   }
 }
